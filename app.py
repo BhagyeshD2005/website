@@ -1,11 +1,4 @@
-
 import os
-
-os.environ["HTTP_PROXY"] = "http://35.160.120.126"
-os.environ["HTTP_PROXY"] = "http://44.233.151.27"
-os.environ["HTTP_PROXY"] = "http://34.211.200.85"
-
-
 import re
 import tempfile
 import logging
@@ -22,8 +15,6 @@ from google import genai
 from dotenv import load_dotenv
 from groq import Groq
 import requests
-
-
 
 # Load environment variables
 load_dotenv()
@@ -146,8 +137,17 @@ class ConfigManager:
     """Manages application configuration and API keys."""
     
     def __init__(self):
-        self.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
-        self.database_url = os.getenv('DATABASE_URL', 'sqlite:///legal_assistant.db')
+        # Use environment variable or generate a random secret key
+        self.secret_key = os.getenv('SECRET_KEY') or os.urandom(24).hex()
+        
+        # Use PostgreSQL for production, SQLite for development
+        self.database_url = os.getenv('DATABASE_URL')
+        if self.database_url and self.database_url.startswith('postgres://'):
+            # Fix for newer SQLAlchemy versions
+            self.database_url = self.database_url.replace('postgres://', 'postgresql://', 1)
+        elif not self.database_url:
+            # Fallback to SQLite for local development
+            self.database_url = 'sqlite:///legal_assistant.db'
         
         # AI API Keys
         self.groq_api_key = os.getenv('GROQ_API_KEY')
@@ -156,6 +156,9 @@ class ConfigManager:
         # Search API Keys
         self.google_search_api_key = os.getenv('GOOGLE_SEARCH_API_KEY')
         self.google_cse_id = os.getenv('GOOGLE_CSE_ID')
+        
+        # Port for deployment
+        self.port = int(os.getenv('PORT', 5000))
         
     def validate_keys(self) -> Dict[str, List[str]]:
         """Validate API keys and return categorized missing keys."""
@@ -633,20 +636,23 @@ def create_app() -> Flask:
     
     # Create database tables and default admin user
     with app.app_context():
-        db.create_all()
-        
-        # Create default admin user if none exists
-        if not User.query.filter_by(is_admin=True).first():
-            admin_user = User(
-                username='admin',
-                email='admin@legalassistant.com',
-                is_admin=True,
-                is_active=True
-            )
-            admin_user.set_password('admin123')  # Change this in production!
-            db.session.add(admin_user)
-            db.session.commit()
-            logger.info("Default admin user created - username: admin, password: admin123")
+        try:
+            db.create_all()
+            
+            # Create default admin user if none exists
+            if not User.query.filter_by(is_admin=True).first():
+                admin_user = User(
+                    username='admin',
+                    email='admin@legalassistant.com',
+                    is_admin=True,
+                    is_active=True
+                )
+                admin_user.set_password('admin123')  # Change this in production!
+                db.session.add(admin_user)
+                db.session.commit()
+                logger.info("Default admin user created - username: admin, password: admin123")
+        except Exception as e:
+            logger.error(f"Database initialization error: {e}")
     
     # Authentication Routes
     @app.route('/login', methods=['GET', 'POST'])
@@ -731,353 +737,3 @@ def create_app() -> Flask:
             # Validation
             if not all([username, email, password]):
                 flash('All fields are required.', 'error')
-                return render_template('create_user.html')
-            
-            # Check if user already exists
-            if User.query.filter_by(username=username).first():
-                flash('Username already exists.', 'error')
-                return render_template('create_user.html')
-            
-            if User.query.filter_by(email=email).first():
-                flash('Email already exists.', 'error')
-                return render_template('create_user.html')
-            
-            # Create user
-            user = User(
-                username=username,
-                email=email,
-                is_admin=is_admin,
-                is_active=True
-            )
-            user.set_password(password)
-            
-            db.session.add(user)
-            db.session.commit()
-            
-            flash(f'User {username} created successfully.', 'success')
-            return redirect(url_for('admin_dashboard'))
-        
-        return render_template('create_user.html')
-    
-    @app.route('/admin/edit_user/<int:user_id>', methods=['GET', 'POST'])
-    @login_required
-    @admin_required
-    def edit_user(user_id):
-        """Edit user."""
-        user = User.query.get_or_404(user_id)
-        
-        if request.method == 'POST':
-            user.username = request.form.get('username')
-            user.email = request.form.get('email')
-            user.is_admin = request.form.get('is_admin') == 'on'
-            user.is_active = request.form.get('is_active') == 'on'
-            
-            # Update password if provided
-            new_password = request.form.get('password')
-            if new_password:
-                user.set_password(new_password)
-            
-            db.session.commit()
-            flash(f'User {user.username} updated successfully.', 'success')
-            return redirect(url_for('admin_dashboard'))
-        
-        return render_template('edit_user.html', user=user)
-    
-    @app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
-    @login_required
-    @admin_required
-    def delete_user(user_id):
-        """Delete user."""
-        user = User.query.get_or_404(user_id)
-        
-        # Prevent deleting the last admin
-        if user.is_admin and User.query.filter_by(is_admin=True).count() == 1:
-            flash('Cannot delete the last admin user.', 'error')
-            return redirect(url_for('admin_dashboard'))
-        
-        # Don't allow self-deletion
-        if user.id == current_user.id:
-            flash('You cannot delete your own account.', 'error')
-            return redirect(url_for('admin_dashboard'))
-        
-        username = user.username
-        db.session.delete(user)
-        db.session.commit()
-        
-        flash(f'User {username} deleted successfully.', 'success')
-        return redirect(url_for('admin_dashboard'))
-    
-    @app.route('/admin/toggle_user/<int:user_id>', methods=['POST'])
-    @login_required
-    @admin_required
-    def toggle_user_status(user_id):
-        """Toggle user active status."""
-        user = User.query.get_or_404(user_id)
-        
-        # Don't allow deactivating self
-        if user.id == current_user.id:
-            flash('You cannot deactivate your own account.', 'error')
-            return redirect(url_for('admin_dashboard'))
-        
-        user.is_active = not user.is_active
-        db.session.commit()
-        
-        status = 'activated' if user.is_active else 'deactivated'
-        flash(f'User {user.username} {status} successfully.', 'success')
-        return redirect(url_for('admin_dashboard'))
-    
-    @app.route('/admin/usage_logs')
-    @login_required
-    @admin_required
-    def usage_logs():
-        """View detailed usage logs."""
-        page = request.args.get('page', 1, type=int)
-        logs = UsageLog.query.order_by(UsageLog.timestamp.desc()).paginate(
-            page=page, per_page=50, error_out=False
-        )
-        return render_template('usage_logs.html', logs=logs)
-    
-    # Main Application Routes (Protected)
-    @app.route('/', methods=['GET'])
-    @login_required
-    def home():
-        """Home page route."""
-        return render_template('home.html')
-    
-    @app.route('/docs', methods=['GET'])
-    @login_required
-    def docs():
-        """Document analysis page."""
-        return render_template('docs.html')
-    
-    @app.route('/api/analyze', methods=['POST'])
-    @login_required
-    def api_analyze():
-        """API endpoint for document analysis."""
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        
-        if not file.filename or not file.filename.lower().endswith('.pdf'):
-            return jsonify({'error': 'Only PDF files are supported'}), 400
-        
-        tmp_file_path = None
-        try:
-            # Save uploaded file temporarily
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                file.save(tmp_file.name)
-                tmp_file_path = tmp_file.name
-            
-            # Analyze document
-            result = doc_service.analyze_pdf(tmp_file_path, file.filename)
-            
-            # Clean up temporary file
-            os.unlink(tmp_file_path)
-            
-            if result.success:
-                # Log activity and increment usage
-                log_user_activity('document', f'Analyzed: {file.filename}')
-                
-                return jsonify({
-                    'success': True,
-                    'analysis': result.data['analysis'],
-                    'filename': result.data['filename']
-                })
-            else:
-                return jsonify({'error': result.error}), 500
-                
-        except Exception as e:
-            logger.error(f"API Error: {e}")
-            if tmp_file_path and os.path.exists(tmp_file_path):
-                try:
-                    os.unlink(tmp_file_path)
-                except Exception as cleanup_error:
-                    logger.error(f"Failed to cleanup temporary file: {cleanup_error}")
-            return jsonify({'error': str(e)}), 500
-    
-    @app.route("/chat", methods=["GET", "POST"])
-    @login_required
-    def chat():
-        """Chat interface route."""
-        if request.method == "GET":
-            return render_template("chat.html")
-        
-        user_query = request.form.get("query")
-        function_key = request.form.get("function")
-        
-        if not user_query:
-            return render_template("chat.html", response={"error": "No query provided"})
-        
-        result = chat_service.get_legal_response(user_query, function_key)
-        
-        if result.success:
-            # Log activity and increment usage
-            log_user_activity('chat', f'Query: {user_query[:100]}...')
-            return render_template("chat.html", response=result.data)
-        else:
-            return render_template("chat.html", response={"error": result.error})
-    
-    @app.route("/section_query", methods=["POST"])
-    @login_required
-    def section_query():
-        """Handle section-specific queries."""
-        data = request.get_json()
-        if not data:
-            return jsonify({"success": False, "error": "No JSON data provided"})
-        
-        required_fields = ["section_title", "section_content", "user_question"]
-        if not all(field in data for field in required_fields):
-            return jsonify({"success": False, "error": "Missing required fields"})
-        
-        result = chat_service.get_section_response(data)
-        
-        if result.success:
-            # Log activity
-            log_user_activity('chat', f'Section query: {data.get("user_question", "")[:50]}...')
-            return jsonify({"success": True, "response": result.data['response']})
-        else:
-            return jsonify({"success": False, "error": result.error})
-    
-    @app.route('/web_search')
-    @login_required
-    def web_search():
-        """Web search interface."""
-        return render_template('web_search.html')
-    
-    @app.route('/search', methods=['POST'])
-    @login_required
-    def search():
-        """Handle search requests."""
-        try:
-            data = request.get_json()
-            query = data.get('query', '').strip()
-            num_results = int(data.get('num_results', 10))
-            
-            if not query:
-                return jsonify({'success': False, 'error': 'Query is required'})
-            
-            result = research_service.deep_research(query, num_results)
-            
-            if result.success:
-                # Log activity and increment usage
-                log_user_activity('search', f'Query: {query}')
-                return jsonify({'success': True, **result.data})
-            else:
-                return jsonify({'success': False, 'error': result.error})
-                
-        except Exception as e:
-            logger.error(f"Search endpoint error: {e}")
-            return jsonify({'success': False, 'error': str(e)})
-    
-    @app.route('/profile')
-    @login_required
-    def profile():
-        """User profile page."""
-        user_logs = UsageLog.query.filter_by(user_id=current_user.id).order_by(
-            UsageLog.timestamp.desc()
-        ).limit(20).all()
-        
-        return render_template('profile.html', user_logs=user_logs)
-    
-    @app.route('/change_password', methods=['GET', 'POST'])
-    @login_required
-    def change_password():
-        """Change user password."""
-        if request.method == 'POST':
-            current_password = request.form.get('current_password')
-            new_password = request.form.get('new_password')
-            confirm_password = request.form.get('confirm_password')
-            
-            if not all([current_password, new_password, confirm_password]):
-                flash('All fields are required.', 'error')
-                return render_template('change_password.html')
-            
-            if not current_user.check_password(current_password):
-                flash('Current password is incorrect.', 'error')
-                return render_template('change_password.html')
-            
-            if new_password != confirm_password:
-                flash('New passwords do not match.', 'error')
-                return render_template('change_password.html')
-            
-            if len(new_password) < 6:
-                flash('New password must be at least 6 characters long.', 'error')
-                return render_template('change_password.html')
-            
-            current_user.set_password(new_password)
-            db.session.commit()
-            
-            flash('Password changed successfully.', 'success')
-            return redirect(url_for('profile'))
-        
-        return render_template('change_password.html')
-    
-    @app.route('/health')
-    def health():
-        """Health check endpoint."""
-        return jsonify({
-            'status': 'healthy',
-            'services': {
-                'google_ai_configured': ai_manager.is_google_available(),
-                'groq_api_configured': ai_manager.is_groq_available(),
-                'search_configured': search_service.is_available()
-            },
-            'api_keys_status': {
-                'google_ai_api_key': bool(config.google_ai_api_key),
-                'google_search_api_key': bool(config.google_search_api_key),
-                'groq_api_key': bool(config.groq_api_key),
-                'google_cse_id': bool(config.google_cse_id)
-            }
-        })
-    
-    @app.route('/routes')
-    @login_required
-    @admin_required
-    def list_routes():
-        """Debug route to list all available routes."""
-        routes = []
-        for rule in app.url_map.iter_rules():
-            routes.append({
-                'endpoint': rule.endpoint,
-                'methods': list(rule.methods),
-                'rule': str(rule)
-            })
-        return jsonify(routes)
-    
-    # Error handlers
-    @app.errorhandler(413)
-    def too_large(e):
-        """Handle file too large error."""
-        return jsonify({'error': 'File too large. Please upload a smaller PDF file.'}), 413
-    
-    @app.errorhandler(500)
-    def server_error(e):
-        """Handle server errors."""
-        logger.error(f"Server error: {e}")
-        return jsonify({'error': 'An internal server error occurred. Please try again.'}), 500
-    
-    @app.errorhandler(404)
-    def not_found(e):
-        """Handle 404 errors."""
-        if request.path.startswith('/api/'):
-            return jsonify({'error': 'Endpoint not found'}), 404
-        return render_template('404.html'), 404
-    
-    # Context processor for templates
-    @app.context_processor
-    def utility_processor():
-        """Add utility functions to template context."""
-        return {
-            'datetime': datetime,
-            'len': len
-        }
-    
-    return app
-
-
-# Application instance
-app = create_app()
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
