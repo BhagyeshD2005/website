@@ -1,0 +1,670 @@
+{% extends "base.html" %}
+
+{% block title %}Document Analysis - LegalShetra{% endblock %}
+
+{% block head %}
+<style>
+    .docs-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .upload-area {
+        background: var(--bg-primary);
+        border: 2px dashed var(--border-color);
+        border-radius: 1rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 2rem;
+    }
+
+    .upload-area:hover, .upload-area.dragover {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+    }
+
+    .upload-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+    }
+
+    .upload-text h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .upload-text p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .upload-btn {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .upload-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .file-preview {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: none;
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .file-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+    }
+
+    .file-details h4 {
+        margin: 0 0 0.25rem 0;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .file-details p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .analysis-section {
+        background: var(--bg-primary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        margin-bottom: 2rem;
+        display: none;
+    }
+
+    .analysis-header {
+        background: linear-gradient(135deg, var(--accent-color) 0%, #059669 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .analysis-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .analysis-content {
+        padding: 2rem;
+        line-height: 1.7;
+    }
+
+    .analysis-content h4 {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin: 1.5rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .analysis-content p {
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+    }
+
+    .analysis-content ul, .analysis-content ol {
+        margin: 1rem 0 1rem 1.5rem;
+        color: var(--text-secondary);
+    }
+
+    .analysis-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .analysis-content strong {
+        color: var(--text-primary);
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--bg-tertiary);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        border-radius: 4px;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .loading-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-secondary);
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--bg-tertiary);
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .error-state {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 2rem;
+        border-radius: 0.75rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .error-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .feature-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary-light);
+    }
+
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 1rem;
+        background: linear-gradient(135deg, var(--secondary-color) 0%, #d97706 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .feature-card h4 {
+        margin: 0 0 0.75rem 0;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .feature-card p {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    @media (max-width: 768px) {
+        .docs-container {
+            padding: 0 1rem;
+        }
+
+        .upload-area {
+            padding: 2rem 1rem;
+        }
+
+        .upload-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+
+        .upload-text h3 {
+            font-size: 1.25rem;
+        }
+
+        .file-info {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .analysis-content {
+            padding: 1.5rem;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container docs-container">
+    <div class="text-center mb-4">
+        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">
+            AI Document Analysis
+        </h1>
+        <p style="font-size: 1.125rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+            Upload your legal documents for comprehensive AI-powered analysis, key insights extraction, and risk assessment.
+        </p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-search-plus"></i>
+            </div>
+            <h4>Deep Analysis</h4>
+            <p>Extract key clauses, terms, and critical information from complex legal documents with AI precision.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h4>Risk Assessment</h4>
+            <p>Identify potential legal risks, compliance issues, and areas requiring attention or review.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-lightbulb"></i>
+            </div>
+            <h4>Smart Insights</h4>
+            <p>Get actionable recommendations and legal insights based on document content and context.</p>
+        </div>
+    </div>
+
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">
+            <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <div class="upload-text">
+            <h3>Upload Your Legal Document</h3>
+            <p>Drag and drop your PDF file here, or click to browse and select</p>
+            <button type="button" class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-folder-open"></i> Choose PDF File
+            </button>
+        </div>
+        <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+    </div>
+
+    <div class="file-preview" id="filePreview">
+        <div class="file-info">
+            <div class="file-icon">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <div class="file-details">
+                <h4 id="fileName">Document.pdf</h4>
+                <p id="fileSize">0 KB</p>
+            </div>
+        </div>
+        <div class="flex justify-between items-center">
+            <button type="button" class="btn btn-success" id="analyzeBtn">
+                <i class="fas fa-cogs"></i> Analyze Document
+            </button>
+            <button type="button" class="btn btn-secondary" id="removeBtn">
+                <i class="fas fa-times"></i> Remove
+            </button>
+        </div>
+    </div>
+
+    <div class="analysis-section" id="analysisSection">
+        <div class="analysis-header">
+            <i class="fas fa-chart-line"></i>
+            <div>
+                <h3>Document Analysis Results</h3>
+                <span style="font-size: 0.875rem; opacity: 0.9;">Powered by Google AI</span>
+            </div>
+        </div>
+        <div class="analysis-content" id="analysisContent">
+            <div class="loading-state" id="loadingState">
+                <div class="loading-spinner"></div>
+                <h4>Analyzing Document...</h4>
+                <p>Our AI is processing your document and extracting key insights. This may take a few moments.</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-info-circle"></i> How It Works
+            </div>
+            <p class="card-subtitle">Our AI-powered document analysis process</p>
+        </div>
+        <div class="card-content">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                <div style="text-align: center;">
+                    <div style="width: 60px; height: 60px; margin: 0 auto 1rem; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: bold;">1</div>
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Upload</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Securely upload your PDF document to our platform</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="width: 60px; height: 60px; margin: 0 auto 1rem; background: linear-gradient(135deg, var(--accent-color) 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: bold;">2</div>
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Process</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">AI analyzes content, structure, and legal elements</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="width: 60px; height: 60px; margin: 0 auto 1rem; background: linear-gradient(135deg, var(--secondary-color) 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: bold;">3</div>
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Analyze</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Receive comprehensive analysis and recommendations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedFile = null;
+
+    // File input handling
+    document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+    
+    // Drag and drop functionality
+    const uploadArea = document.getElementById('uploadArea');
+    
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    // Click to upload
+    uploadArea.addEventListener('click', () => {
+        document.getElementById('fileInput').click();
+    });
+
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    }
+
+    function handleFile(file) {
+        // Validate file type
+        if (file.type !== 'application/pdf') {
+            showError('Please select a PDF file.');
+            return;
+        }
+
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            showError('File size must be less than 10MB.');
+            return;
+        }
+
+        selectedFile = file;
+        showFilePreview(file);
+    }
+
+    function showFilePreview(file) {
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        document.getElementById('filePreview').style.display = 'block';
+        document.getElementById('uploadArea').style.display = 'none';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Remove file
+    document.getElementById('removeBtn').addEventListener('click', () => {
+        selectedFile = null;
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('analysisSection').style.display = 'none';
+        document.getElementById('uploadArea').style.display = 'block';
+        document.getElementById('fileInput').value = '';
+    });
+
+    // Analyze document
+    document.getElementById('analyzeBtn').addEventListener('click', async () => {
+        if (!selectedFile) {
+            showError('Please select a file first.');
+            return;
+        }
+
+        const analysisSection = document.getElementById('analysisSection');
+        const loadingState = document.getElementById('loadingState');
+        const analysisContent = document.getElementById('analysisContent');
+        
+        // Show analysis section with loading state
+        analysisSection.style.display = 'block';
+        loadingState.style.display = 'block';
+        analysisContent.innerHTML = '';
+        analysisContent.appendChild(loadingState);
+
+        // Animate progress bar
+        animateProgress();
+
+        try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAnalysisResults(data);
+            } else {
+                showAnalysisError(data.error || 'Analysis failed');
+            }
+        } catch (error) {
+            console.error('Analysis error:', error);
+            showAnalysisError('Network error. Please check your connection and try again.');
+        }
+    });
+
+    function animateProgress() {
+        let progress = 0;
+        const progressFill = document.getElementById('progressFill');
+        
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress > 90) progress = 90;
+            
+            progressFill.style.width = progress + '%';
+            
+            if (progress >= 90) {
+                clearInterval(interval);
+            }
+        }, 200);
+
+        // Store interval ID to clear it when analysis completes
+        window.progressInterval = interval;
+    }
+
+    function showAnalysisResults(data) {
+        // Clear progress interval
+        if (window.progressInterval) {
+            clearInterval(window.progressInterval);
+        }
+        
+        // Complete progress bar
+        document.getElementById('progressFill').style.width = '100%';
+        
+        setTimeout(() => {
+            const analysisContent = document.getElementById('analysisContent');
+            
+            // Format the analysis text
+            let formattedAnalysis = data.analysis;
+            
+            // Convert markdown-style formatting to HTML
+            formattedAnalysis = formattedAnalysis.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedAnalysis = formattedAnalysis.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Add line breaks
+            formattedAnalysis = formattedAnalysis.replace(/\n\n/g, '</p><p>');
+            formattedAnalysis = formattedAnalysis.replace(/\n/g, '<br>');
+            
+            // Wrap in paragraphs
+            if (!formattedAnalysis.startsWith('<p>')) {
+                formattedAnalysis = '<p>' + formattedAnalysis + '</p>';
+            }
+
+            analysisContent.innerHTML = `
+                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">
+                        <i class="fas fa-file-pdf"></i> ${data.filename}
+                    </h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                        Analysis completed successfully
+                    </p>
+                </div>
+                
+                <div class="analysis-results">
+                    <h4 style="color: var(--primary-color); margin-bottom: 1rem;">
+                        <i class="fas fa-chart-bar"></i> Analysis Results
+                    </h4>
+                    ${formattedAnalysis}
+                </div>
+                
+                <div style="margin-top: 2rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: 0.75rem; border: 1px solid var(--border-color);">
+                    <h5 style="margin: 0 0 1rem 0; color: var(--text-primary);">
+                        <i class="fas fa-lightbulb"></i> What's Next?
+                    </h5>
+                    <p style="margin: 0 0 1rem 0; color: var(--text-secondary); font-size: 0.875rem;">
+                        Based on this analysis, you can:
+                    </p>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <a href="/chat" class="btn btn-primary">
+                            <i class="fas fa-comments"></i> Discuss with AI
+                        </a>
+                        <a href="/web_search" class="btn btn-secondary">
+                            <i class="fas fa-search"></i> Research Further
+                        </a>
+                    </div>
+                </div>
+            `;
+        }, 500);
+    }
+
+    function showAnalysisError(error) {
+        // Clear progress interval
+        if (window.progressInterval) {
+            clearInterval(window.progressInterval);
+        }
+
+        const analysisContent = document.getElementById('analysisContent');
+        analysisContent.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h4>Analysis Failed</h4>
+                <p><strong>Error:</strong> ${error}</p>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('analyzeBtn').click()">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            </div>
+        `;
+    }
+
+    function showError(message) {
+        // Create temporary error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+        
+        document.querySelector('.docs-container').insertBefore(errorDiv, document.querySelector('.upload-area'));
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}

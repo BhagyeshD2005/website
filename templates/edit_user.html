@@ -1,0 +1,108 @@
+{% extends "base2.html" %}
+
+{% block title %}Edit User - Legal Assistant{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">
+                <i class="fas fa-user-edit mr-3"></i>Edit User: {{ user.username }}
+            </h1>
+            <p class="mt-2 text-sm text-gray-700">
+                Update user information and permissions
+            </p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white shadow rounded-lg">
+            <form method="POST" class="space-y-6 p-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">
+                        Username <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        <input type="text" name="username" id="username" required
+                               value="{{ user.username }}"
+                               class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">
+                        Email <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        <input type="email" name="email" id="email" required
+                               value="{{ user.email }}"
+                               class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">
+                        New Password
+                    </label>
+                    <div class="mt-1">
+                        <input type="password" name="password" id="password"
+                               class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                               placeholder="Leave blank to keep current password">
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Leave blank to keep the current password.</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <input id="is_admin" name="is_admin" type="checkbox"
+                               {% if user.is_admin %}checked{% endif %}
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="is_admin" class="ml-2 block text-sm text-gray-900">
+                            Grant admin privileges
+                        </label>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input id="is_active" name="is_active" type="checkbox"
+                               {% if user.is_active %}checked{% endif %}
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="is_active" class="ml-2 block text-sm text-gray-900">
+                            Account is active
+                        </label>
+                    </div>
+                </div>
+
+                <!-- User Statistics -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Usage Statistics</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center p-3 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600">{{ user.chat_requests }}</div>
+                            <div class="text-sm text-gray-500">Chat Requests</div>
+                        </div>
+                        <div class="text-center p-3 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600">{{ user.document_analyses }}</div>
+                            <div class="text-sm text-gray-500">Documents</div>
+                        </div>
+                        <div class="text-center p-3 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-purple-600">{{ user.search_requests }}</div>
+                            <div class="text-sm text-gray-500">Searches</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="{{ url_for('admin_dashboard') }}"
+                       class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="bg-indigo-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i class="fas fa-save mr-2"></i>Update User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

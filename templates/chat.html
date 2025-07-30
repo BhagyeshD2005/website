@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+
+{% block title %}AI Legal Chat - LegalShetra{% endblock %}
+
+{% block head %}
+<style>
+    .chat-container {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 2rem;
+        height: calc(100vh - 200px);
+        max-height: 800px;
+    }
+
+    .chat-sidebar {
+        background: var(--bg-primary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-md);
+        padding: 1.5rem;
+        overflow-y: auto;
+    }
+
+    .context-selector {
+        margin-bottom: 2rem;
+    }
+
+    .context-option {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        text-decoration: none;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .context-option:hover, .context-option.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .context-option i {
+        margin-right: 0.5rem;
+        width: 16px;
+    }
+
+    .chat-main {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+
+    .chat-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .chat-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 2rem;
+        overflow-y: auto;
+        background: var(--bg-secondary);
+        min-height: 400px;
+    }
+
+    .message {
+        margin-bottom: 1.5rem;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    .message-user {
+        text-align: right;
+    }
+
+    .message-bubble {
+        display: inline-block;
+        max-width: 80%;
+        padding: 1rem 1.5rem;
+        border-radius: 1rem;
+        word-wrap: break-word;
+    }
+
+    .message-user .message-bubble {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+    }
+
+    .message-ai .message-bubble {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-bottom-left-radius: 0.25rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .response-section {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .section-header {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+    }
+
+    .section-header:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .section-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-content {
+        padding: 1.5rem;
+        line-height: 1.7;
+        color: var(--text-secondary);
+    }
+
+    .section-content strong {
+        color: var(--text-primary);
+    }
+
+    .section-actions {
+        padding: 0 1.5rem 1rem;
+        border-top: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+    }
+
+    .section-query-form {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .section-query-input {
+        flex: 1;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        background: var(--bg-primary);
+    }
+
+    .section-query-btn {
+        padding: 0.5rem 1rem;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+
+    .section-query-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .section-response {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--bg-primary);
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+        display: none;
+    }
+
+    .chat-input-area {
+        background: var(--bg-primary);
+        border-top: 1px solid var(--border-color);
+        padding: 1.5rem 2rem;
+    }
+
+    .chat-form {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .chat-input-group {
+        flex: 1;
+    }
+
+    .chat-input {
+        width: 100%;
+        min-height: 60px;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        background: var(--bg-secondary);
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .chat-submit {
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .chat-submit:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .chat-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+    }
+
+    .error-message {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+        .chat-container {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        .chat-sidebar {
+            order: 2;
+            margin-top: 2rem;
+        }
+
+        .context-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .context-option {
+            margin-bottom: 0;
+            text-align: center;
+            font-size: 0.75rem;
+            padding: 0.5rem;
+        }
+
+        .chat-messages {
+            min-height: 300px;
+        }
+
+        .message-bubble {
+            max-width: 95%;
+        }
+
+        .chat-form {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-submit {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="chat-container">
+        <div class="chat-sidebar">
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 1.125rem;">Legal Contexts</h3>
+            <div class="context-selector">
+                <div class="context-option active" data-context="general">
+                    <i class="fas fa-balance-scale"></i> General Legal
+                </div>
+                <div class="context-option" data-context="case_law">
+                    <i class="fas fa-gavel"></i> Case Law Research
+                </div>
+                <div class="context-option" data-context="contract">
+                    <i class="fas fa-file-contract"></i> Contract Analysis
+                </div>
+                <div class="context-option" data-context="compliance">
+                    <i class="fas fa-shield-alt"></i> Compliance
+                </div>
+                <div class="context-option" data-context="startup">
+                    <i class="fas fa-rocket"></i> Startup Legal
+                </div>
+                <div class="context-option" data-context="consumer">
+                    <i class="fas fa-users"></i> Consumer Protection
+                </div>
+                <div class="context-option" data-context="criminal">
+                    <i class="fas fa-handcuffs"></i> Criminal Law
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                <strong style="color: var(--text-primary);">Pro Tip:</strong> Select the most relevant legal context above to get specialized and structured responses tailored to your specific legal domain.
+            </div>
+        </div>
+
+        <div class="chat-main">
+            <div class="chat-header">
+                <i class="fas fa-robot"></i>
+                <div>
+                    <h2>AI Legal Assistant</h2>
+                    <span style="font-size: 0.875rem; opacity: 0.9;" id="selectedContext">General Legal Context</span>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                {% if response %}
+                    {% if response.error %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Error:</strong> {{ response.error }}
+                        </div>
+                    {% else %}
+                        <div class="message message-user">
+                            <div class="message-bubble">
+                                {{ response.original_query }}
+                            </div>
+                        </div>
+
+                        <div class="message message-ai">
+                            <div class="message-bubble">
+                                {% for title, content in response.formatted %}
+                                    <div class="response-section">
+                                        <div class="section-header" onclick="toggleSection(this)">
+                                            <div class="section-title">
+                                                <i class="fas fa-chevron-right section-icon"></i>
+                                                {{ title }}
+                                            </div>
+                                        </div>
+                                        <div class="section-content">
+                                            {{ content|safe }}
+                                        </div>
+                                        <div class="section-actions">
+                                            <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" onclick="showSectionQuery(this, '{{ title }}', '{{ content|safe }}')">
+                                                <i class="fas fa-question-circle"></i> Ask about this section
+                                            </button>
+                                            <div class="section-query-form" style="display: none;">
+                                                <input type="text" class="section-query-input" placeholder="Ask a specific question about this section...">
+                                                <button type="button" class="section-query-btn" onclick="submitSectionQuery(this, '{{ title }}', '{{ content|safe }}')">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </button>
+                                            </div>
+                                            <div class="section-response"></div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="message message-ai">
+                        <div class="message-bubble">
+                            <h4 style="margin-bottom: 1rem; color: var(--primary-color);">
+                                <i class="fas fa-sparkles"></i> Welcome to LegalShetra AI Assistant!
+                            </h4>
+                            <p style="margin-bottom: 1rem;">I'm here to help you with legal questions and analysis. Here's what I can do:</p>
+                            <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                                <li>Provide structured legal analysis and advice</li>
+                                <li>Research case law and legal precedents</li>
+                                <li>Analyze contracts and legal documents</li>
+                                <li>Explain compliance requirements</li>
+                                <li>Assist with startup legal matters</li>
+                                <li>Help with consumer protection issues</li>
+                                <li>Provide criminal law insights</li>
+                            </ul>
+                            <p><strong>Choose a legal context from the sidebar and ask your question to get started!</strong></p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="chat-input-area">
+                <form method="POST" class="chat-form" id="chatForm">
+                    <div class="chat-input-group">
+                        <textarea name="query" class="chat-input" placeholder="Ask your legal question here..." required></textarea>
+                        <input type="hidden" name="function" id="selectedFunction" value="general">
+                    </div>
+                    <button type="submit" class="chat-submit" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Context selection
+    document.querySelectorAll('.context-option').forEach(option => {
+        option.addEventListener('click', function() {
+            // Remove active class from all options
+            document.querySelectorAll('.context-option').forEach(opt => opt.classList.remove('active'));
+            
+            // Add active class to clicked option
+            this.classList.add('active');
+            
+            // Update hidden input and header
+            const context = this.dataset.context;
+            document.getElementById('selectedFunction').value = context;
+            
+            // Update context display text
+            const contextNames = {
+                'general': 'General Legal Context',
+                'case_law': 'Case Law Research Context',
+                'contract': 'Contract Analysis Context',
+                'compliance': 'Compliance Context',
+                'startup': 'Startup Legal Context',
+                'consumer': 'Consumer Protection Context',
+                'criminal': 'Criminal Law Context'
+            };
+            
+            document.getElementById('selectedContext').textContent = contextNames[context] || 'General Legal Context';
+        });
+    });
+
+    // Form submission
+    document.getElementById('chatForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        const textarea = this.querySelector('textarea');
+        
+        if (!textarea.value.trim()) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Add loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="loading"></div> Processing...';
+        
+        // Add user message to chat immediately
+        const userMessage = document.createElement('div');
+        userMessage.className = 'message message-user';
+        userMessage.innerHTML = `<div class="message-bubble">${textarea.value}</div>`;
+        document.getElementById('chatMessages').appendChild(userMessage);
+        
+        // Add loading message
+        const loadingMessage = document.createElement('div');
+        loadingMessage.className = 'message message-ai';
+        loadingMessage.innerHTML = `
+            <div class="message-bubble">
+                <div class="loading-spinner">
+                    <div class="loading"></div>
+                    <p>Analyzing your legal query...</p>
+                </div>
+            </div>
+        `;
+        document.getElementById('chatMessages').appendChild(loadingMessage);
+        
+        // Scroll to bottom
+        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    });
+
+    // Toggle section visibility
+    function toggleSection(header) {
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.section-icon');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            content.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // Show section query form
+    function showSectionQuery(button, title, content) {
+        const form = button.nextElementSibling;
+        if (form.style.display === 'none' || !form.style.display) {
+            form.style.display = 'flex';
+            button.style.display = 'none';
+            form.querySelector('input').focus();
+        }
+    }
+
+    // Submit section-specific query
+    async function submitSectionQuery(button, sectionTitle, sectionContent) {
+        const form = button.parentElement;
+        const input = form.querySelector('input');
+        const responseDiv = form.nextElementSibling;
+        const userQuestion = input.value.trim();
+        
+        if (!userQuestion) return;
+        
+        // Show loading
+        button.disabled = true;
+        button.innerHTML = '<div class="loading"></div>';
+        
+        try {
+            const response = await fetch('/section_query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    section_title: sectionTitle,
+                    section_content: sectionContent,
+                    user_question: userQuestion,
+                    original_query: '{{ response.original_query if response else "" }}',
+                    function_key: document.getElementById('selectedFunction').value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                responseDiv.innerHTML = `
+                    <div style="padding: 0.75rem; background: var(--bg-tertiary); border-radius: 0.375rem; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <strong>Question:</strong> ${userQuestion}
+                    </div>
+                    <div>${data.response}</div>
+                `;
+                responseDiv.style.display = 'block';
+                input.value = '';
+                form.style.display = 'none';
+                form.previousElementSibling.style.display = 'inline-flex';
+            } else {
+                responseDiv.innerHTML = `<div class="error-message">Error: ${data.error}</div>`;
+                responseDiv.style.display = 'block';
+            }
+        } catch (error) {
+            responseDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            responseDiv.style.display = 'block';
+        }
+        
+        // Reset button
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-paper-plane"></i>';
+    }
+
+    // Initialize sections as expanded
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.section-header').forEach(header => {
+            const icon = header.querySelector('.section-icon');
+            if (icon) {
+                icon.style.transform = 'rotate(90deg)';
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}LegalShetra - AI-Powered Legal Assistant Platform{% endblock %}
+
+{% block head %}
+<style>
+    .hero {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 50%, #1e3a8a 100%);
+        color: white;
+        padding: 4rem 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+        opacity: 0.1;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero p {
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .hero .btn {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .service-card {
+        background: var(--bg-primary);
+        border-radius: 1rem;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
+
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--primary-light);
+    }
+
+    .service-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+    }
+
+    .service-card h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .service-card p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+
+    .features {
+        background: var(--bg-primary);
+        padding: 4rem 0;
+        margin-top: 4rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+    }
+
+    .feature {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .feature-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--accent-color) 0%, #059669 100%);
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .feature-content h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .feature-content p {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    .stats {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        padding: 3rem 0;
+        margin-top: 4rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        text-align: center;
+    }
+
+    .stat-item h3 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-item p {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .hero h1 {
+            font-size: 2.5rem;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+        }
+
+        .hero-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .services-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>AI-Powered Legal Intelligence</h1>
+            <p>Transform your legal practice with advanced AI tools for document analysis, legal research, and intelligent consultation. Experience the future of legal technology today.</p>
+            <div class="hero-buttons">
+                <a href="/chat" class="btn btn-primary">
+                    <i class="fas fa-rocket"></i> Start AI Chat
+                </a>
+                <a href="/docs" class="btn btn-secondary">
+                    <i class="fas fa-file-upload"></i> Analyze Documents
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">
+            Comprehensive Legal Solutions
+        </h2>
+        <p style="font-size: 1.125rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+            Leverage cutting-edge AI technology to streamline your legal workflows and enhance decision-making
+        </p>
+    </div>
+
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <h3>AI Legal Chat</h3>
+            <p>Get instant legal insights with our specialized AI assistant trained on legal contexts including case law, contracts, compliance, and more.</p>
+            <a href="/chat" class="btn btn-primary">
+                <i class="fas fa-arrow-right"></i> Start Consultation
+            </a>
+        </div>
+
+        <div class="service-card">
+            <div class="service-icon">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <h3>Document Analysis</h3>
+            <p>Upload PDF documents for comprehensive AI-powered analysis, extraction of key clauses, and risk assessment with actionable insights.</p>
+            <a href="/docs" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Analyze Documents
+            </a>
+        </div>
+
+        <div class="service-card">
+            <div class="service-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <h3>Legal Research</h3>
+            <p>Conduct comprehensive legal research with AI-enhanced web search, case law analysis, and intelligent synthesis of legal precedents.</p>
+            <a href="/web_search" class="btn btn-primary">
+                <i class="fas fa-search-plus"></i> Start Research
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">
+                Why Choose LegalShetra?
+            </h2>
+            <p style="color: var(--text-secondary);">
+                Advanced features designed for modern legal professionals
+            </p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Advanced AI Models</h4>
+                    <p>Powered by state-of-the-art language models including Groq and Google AI for superior accuracy and insights.</p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Secure & Confidential</h4>
+                    <p>Enterprise-grade security ensuring your legal documents and consultations remain completely confidential.</p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Real-time Processing</h4>
+                    <p>Get instant results with our optimized AI infrastructure designed for speed and reliability.</p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Specialized Contexts</h4>
+                    <p>Multiple legal domain contexts including corporate law, criminal law, contracts, and compliance.</p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Detailed Analytics</h4>
+                    <p>Comprehensive analysis with structured outputs, risk assessments, and actionable recommendations.</p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Mobile Responsive</h4>
+                    <p>Access your legal AI assistant from any device with our fully responsive web application.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="stats">
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">
+                Trusted by Legal Professionals
+            </h2>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h3>10K+</h3>
+                <p>Documents Analyzed</p>
+            </div>
+            <div class="stat-item">
+                <h3>500+</h3>
+                <p>Legal Consultations</p>
+            </div>
+            <div class="stat-item">
+                <h3>95%</h3>
+                <p>Accuracy Rate</p>
+            </div>
+            <div class="stat-item">
+                <h3>24/7</h3>
+                <p>AI Availability</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container" style="text-align: center; padding: 4rem 0;">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <div class="card-content">
+            <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">Ready to Get Started?</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Join thousands of legal professionals who trust LegalShetra for their AI-powered legal assistance needs.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="/chat" class="btn btn-primary">
+                    <i class="fas fa-comments"></i> Start Free Consultation
+                </a>
+                <a href="/profile" class="btn btn-secondary">
+                    <i class="fas fa-info-circle"></i> View Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
