@@ -1,5 +1,11 @@
 
 import os
+
+os.environ["HTTP_PROXY"] = "http://35.160.120.126"
+os.environ["HTTP_PROXY"] = "http://44.233.151.27"
+os.environ["HTTP_PROXY"] = "http://34.211.200.85"
+
+
 import re
 import tempfile
 import logging
@@ -16,6 +22,8 @@ from google import genai
 from dotenv import load_dotenv
 from groq import Groq
 import requests
+
+
 
 # Load environment variables
 load_dotenv()
